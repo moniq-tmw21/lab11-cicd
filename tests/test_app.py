@@ -2,7 +2,7 @@ from app import app, greet
 
 
 def test_greet():
-    assert greet("   aidana   ") == "Hello, Aidana!"
+    assert greet("   aidana   ") == "Hello there, Aidana!"
 
 
 def test_healthz():
