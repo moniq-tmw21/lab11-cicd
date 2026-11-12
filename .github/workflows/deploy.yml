@@ -1,0 +1,52 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to deploy, for example 1.0.1 or 1.0.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: production
+    steps:
+      - name: Deploy selected image
+        shell: pwsh
+        env:
+          TAG: ${{ inputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          $image = "ghcr.io/$($env:REPOSITORY.ToLowerInvariant()):$env:TAG"
+
+          docker rm -f lab11-prod 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "No previous deployment to remove."
+          }
+
+          docker pull $image
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not pull image $image"
+          }
+
+          docker run -d --name lab11-prod -p 8012:8000 $image
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not start container from $image"
+          }
+
+          Start-Sleep -Seconds 3
+          $result = Invoke-RestMethod -Uri "http://localhost:8012/version"
+          Write-Host "Running version: $($result.version)"
+
+          if ($result.version -ne $env:TAG) {
+            throw "Expected version $env:TAG, got $($result.version)"
+          }
