@@ -21,7 +21,7 @@ jobs:
     environment: production
     steps:
       - name: Deploy selected image
-        shell: pwsh
+        shell: powershell
         env:
           TAG: ${{ inputs.tag }}
           REPOSITORY: ${{ github.repository }}
